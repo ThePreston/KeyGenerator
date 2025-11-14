@@ -1,0 +1,7 @@
+# For more info on HTTP files go to https://aka.ms/vs/httpfile
+POST URL Here
+Content-Type: application/json
+{
+  "name": "TestNamePerson1",
+  "apiKey": "GeneratedKeyforTestNamePerson1"
+}

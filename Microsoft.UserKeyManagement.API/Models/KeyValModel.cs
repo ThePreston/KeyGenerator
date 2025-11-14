@@ -1,10 +1,13 @@
-﻿
+﻿using System.Text.Json.Serialization;
+
 namespace Microsoft.UserKeyManagement.API.Models
 {
     public class KeyValModel
     {
-        public string userName { get; set; }
+        [JsonPropertyName("userName")]
+        public string UserName { get; set; }
 
-        public string apiKey { get; set; }
+        [JsonPropertyName("apiKey")]
+        public string APIKey { get; set; }
     }
 }

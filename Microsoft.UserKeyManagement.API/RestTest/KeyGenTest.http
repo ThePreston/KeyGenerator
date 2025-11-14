@@ -1,7 +1,7 @@
 # For more info on HTTP files go to https://aka.ms/vs/httpfile
-POST URL Here
+POST http://localhost:7014/api/KeyGenRequest
 Content-Type: application/json
 {
-  "name": "TestNamePerson1",
-  "apiKey": "GeneratedKeyforTestNamePerson1"
+  "userName": "testGenName1",
+  "apiKey": "5b9cd2eede514baaa7e2f670204ffcf3"
 }

@@ -25,9 +25,6 @@ public class KeyGenRequest
         _config = configuration;
         _secretClient = secretClient;
         _redis = redis;
-
-        _logger.LogInformation($" Entered Constructor configs KV= {_config["KeyVaultUri"]}; ConnString ={_config["RedisConn"]}");
-
     }
 
     [Function("KeyGenRequest")]
@@ -42,15 +39,16 @@ public class KeyGenRequest
         string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
         var kv = JsonConvert.DeserializeObject<KeyValModel>(requestBody);
         
-        if (kv == null || string.IsNullOrEmpty(kv.name) || string.IsNullOrEmpty(kv.apiKey))        
+
+        if (kv == null || string.IsNullOrEmpty(kv.userName) || string.IsNullOrEmpty(kv.apiKey))        
             return new BadRequestObjectResult($"Invalid request payload. Body = {req.Body}");
-        
-        _logger.LogInformation($"configs kv.name = {kv.name}; kv.apiKey {kv.apiKey}");
 
-        await SetSecretInKeyVaultAsync(kv.name, kv.apiKey);
-        await SetKeyValueInRedisAsync(kv.name, kv.apiKey);
+        _logger.LogInformation($"configs kv.name = {kv.userName}; kv.apiKey {kv.apiKey}");
 
-        return new OkObjectResult($"name = {kv.name} apiKey = {kv.apiKey}. This HTTP triggered function executed successfully.");
+        await SetSecretInKeyVaultAsync(kv.userName, kv.apiKey);
+        await SetKeyValueInRedisAsync(kv.apiKey, kv.userName);
+
+        return new OkObjectResult(JsonConvert.SerializeObject(kv));//$"name = {kv.name} apiKey = {kv.apiKey}. This HTTP triggered function executed successfully.");
 
     }
 

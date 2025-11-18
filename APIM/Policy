@@ -1,0 +1,66 @@
+<policies>
+    <inbound>
+        <base />
+        <set-variable name="userapikey" value="@(Convert.ToString(context.Request.Headers.GetValueOrDefault("APIKEY", "")))" />
+        <cache-lookup-value key="@(context.Variables.GetValueOrDefault<string>("userapikey"))" default-value="empty" variable-name="username" caching-type="external" />
+        <!-- For testing purposes, not needed
+        <set-header name="CachedUserName" exists-action="override">
+            <value>@(context.Variables.GetValueOrDefault<string>("username"))</value>
+        </set-header> -->
+        <choose>
+            <when condition="@(context.Variables.GetValueOrDefault<string>("username") == "empty")">
+                <set-variable name="KeyGenFuncURL" value="@("{{KeyGenQueryURL}}")" />
+                <wait for="all">
+                    <send-request mode="new" response-variable-name="varResponseBody" timeout="30" ignore-error="false">
+                        <set-url>@(context.Variables.GetValueOrDefault<string>("KeyGenFuncURL"))</set-url>
+                        <set-method>POST</set-method>
+                        <set-header name="x-functions-key" exists-action="override">
+                            <value>{{KeyGenQueryKey}}</value>
+                        </set-header>
+                        <set-body>@{
+                                return new JObject(
+                                        new JProperty("cacheKey", (string)context.Variables.GetValueOrDefault<string>("userapikey"))
+                                        ).ToString(); }</set-body>
+                    </send-request>
+                </wait>
+                <choose>
+                    <when condition="@(((IResponse)context.Variables["varResponseBody"]).StatusCode == 200)">
+                        <set-variable name="respCacheValue" value="@(((IResponse)context.Variables["varResponseBody"]).Body.As<JObject>()["userName"].ToString())" />
+                        <cache-store-value key="@((string)context.Variables.GetValueOrDefault<string>("userapikey"))" value="@((string)context.Variables.GetValueOrDefault<string>("respCacheValue"))" duration="3000" caching-type="external" />
+                        <!-- For Testing Purposes, comment out Cache-Store and send Response showing that it worked
+                        <return-response>
+                            <set-status code="200" reason="This is success" />
+                            <set-header name="Content-Type" exists-action="override">
+                                <value>application/json</value>
+                            </set-header>
+                            <set-body>@{
+                                return new JObject(
+                                        new JProperty("cacheKey", context.Variables.GetValueOrDefault<string>("userapikey")),
+                                        new JProperty("cacheValue", (string)context.Variables.GetValueOrDefault<string>("respCacheValue"))
+                                        ).ToString(); }</set-body>
+                        </return-response>
+                         -->
+                    </when>
+                    <otherwise>
+                        <return-response>
+                            <set-status code="401" reason="Invalid or missing API Key" />
+                            <set-header name="Content-Type" exists-action="override">
+                                <value>application/json</value>
+                            </set-header>
+                        </return-response>
+                    </otherwise>
+                </choose>
+            </when>
+        </choose>
+        <set-backend-service id="apim-generated-policy" backend-id="LogicApp_ELM-Email_rg-demo-central-dev01_e66461fc329d4cd68a506f0789e8927d" />
+    </inbound>
+    <backend>
+        <base />
+    </backend>
+    <outbound>
+        <base />
+    </outbound>
+    <on-error>
+        <base />
+    </on-error>
+</policies>

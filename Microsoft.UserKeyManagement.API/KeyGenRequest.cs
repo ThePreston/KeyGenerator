@@ -71,10 +71,25 @@ public class KeyGenRequest
 
         _logger.LogInformation($"configs kv.cacheKey = {kv.CacheKey}");
 
-        string cacheValue = await GetCacheValueInRedisAsync(kv.CacheKey);
+        ObjectResult res;
 
-        return new OkObjectResult(JsonConvert.SerializeObject(new KeyValModel { APIKey = cacheValue, UserName = kv.CacheKey }));
+        try
+        {
 
+            string cacheValue = await GetCacheValueInRedisAsync(kv.CacheKey);
+
+            if (string.IsNullOrEmpty(cacheValue))
+                res = new NotFoundObjectResult($"Cache key '{kv.CacheKey}' not found.");
+            else
+                res = new OkObjectResult(new KeyValModel { APIKey = kv.CacheKey, UserName = cacheValue });
+
+        }
+        catch (Exception ex)
+        {
+            res = new BadRequestObjectResult($"Error retrieving cache key '{kv.CacheKey}': {ex.Message}");
+        }
+
+        return res;
     }
 
     public async Task SetSecretInKeyVaultAsync(string key, string value)

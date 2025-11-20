@@ -1,7 +1,8 @@
 
 
 # Cache-Aside Pattern
-<img width="669" height="465" alt="CreateKey-CacheAside" src="https://github.com/user-attachments/assets/9291c099-d5cc-45d5-a390-753b5bac539c" />
+<img width="669" height="262" alt="CacheAsideImplementation" src="https://github.com/user-attachments/assets/8ad1fe2d-ca48-4b7c-913d-818559343df2" />
+
 
 # Create/Update Key
 <img width="669" height="465" alt="APIMKeyGen" src="https://github.com/user-attachments/assets/e3717cd9-6e2c-440f-870f-790e5b93c615" />

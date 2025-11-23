@@ -5,6 +5,7 @@ using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Attributes;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.OpenApi.Models;
 using Microsoft.UserKeyManagement.API.Models;
 using Newtonsoft.Json;
 using StackExchange.Redis;
@@ -56,33 +57,36 @@ public class KeyGenRequest
 
     [Function("CacheValueRequest")]
     [OpenApiOperation(operationId: "CacheValueRequest", tags: new[] { "valreq" })]
-    [OpenApiRequestBody(contentType: "application/json", bodyType: typeof(CacheValModel), Required = true, Description = "cache value payload")]
+    [OpenApiParameter(name: "cacheKey", In = ParameterLocation.Query, Required = true, Type = typeof(string), Description = "The cache key to retrieve")]
     [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(KeyValModel), Description = "The OK response")]
-    public async Task<IActionResult> Valreq([HttpTrigger(AuthorizationLevel.Function, "post", Route = null)] HttpRequest req)
+    public async Task<IActionResult> Valreq([HttpTrigger(AuthorizationLevel.Function, "get", Route = null)] HttpRequest req)
     {
 
         _logger.LogInformation("C# HTTP trigger function processed a request.");
 
-        string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
-        var kv = JsonConvert.DeserializeObject<CacheValModel>(requestBody);
-
-        if (kv == null || string.IsNullOrEmpty(kv.CacheKey))
-            return new BadRequestObjectResult($"Invalid request payload. Body = {req.Body}");
-
-        _logger.LogInformation($"configs kv.cacheKey = {kv.CacheKey}");
-
         ObjectResult res;
+        var kv = new CacheValModel();
 
         try
         {
 
-            string cacheValue = await GetCacheValueInRedisAsync(kv.CacheKey);
+            var cacheKey = req.Query["cacheKey"];
 
-            if (string.IsNullOrEmpty(cacheValue))
-                res = new NotFoundObjectResult($"Cache key '{kv.CacheKey}' not found.");
+            if (string.IsNullOrEmpty(cacheKey))
+                res = new BadRequestObjectResult("Missing or empty 'cacheKey' query parameter.");
             else
-                res = new OkObjectResult(new KeyValModel { APIKey = kv.CacheKey, UserName = cacheValue });
+            {
+                kv.CacheKey = cacheKey;
 
+                _logger.LogInformation($"configs kv.cacheKey = {kv.CacheKey}");
+
+                string cacheValue = await GetCacheValueInRedisAsync(kv.CacheKey);
+
+                if (string.IsNullOrEmpty(cacheValue))
+                    res = new NotFoundObjectResult($"Cache key '{kv.CacheKey}' not found.");
+                else
+                    res = new OkObjectResult(new KeyValModel { APIKey = kv.CacheKey, UserName = cacheValue });
+            }
         }
         catch (Exception ex)
         {

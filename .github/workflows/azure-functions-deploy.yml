@@ -29,10 +29,24 @@ jobs:
 
       - name: Publish
         run: dotnet publish Microsoft.UserKeyManagement.API/Microsoft.UserKeyManagement.API.csproj --configuration Release --output ./publish
+      
+      # Zip the publish folder, may not be needed
+      - name: Zip publish folder
+        run: zip -r publish.zip .
+        working-directory: ./publish
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}
 
       - name: Deploy to Azure Functions
-        uses: Azure/functions-action@v1
-        with:
-          app-name: ${{ env.FunctionAppName }}
-          package: ./publish
-          publish-profile: ${{ secrets.AZURE_FUNCTIONAPP_KEYGEN_PUBLISH_PROFILE }}
+        run: |
+          az functionapp deployment source config-zip \
+            --name ${{ env.FunctionAppName }} \
+            --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
+            --src ./publish.zip
+        working-directory: ./publish
